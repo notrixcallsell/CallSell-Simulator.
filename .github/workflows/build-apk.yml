@@ -1,0 +1,48 @@
+
+name: Build CallSell Simulator APK
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '**'
+      - '!README.md'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download project
+        uses: actions/checkout@v4
+
+      - name: Install Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Extract project
+        run: |
+          mkdir extracted
+          unzip -o CallSell-Simulator-Android-1.zip -d extracted
+
+      - name: Build APK
+        run: |
+          GRADLEW=$(find extracted -name gradlew -type f | head -n 1)
+          if [ -z "$GRADLEW" ]; then
+            echo "Projet Android Gradle introuvable dans le ZIP"
+            exit 1
+          fi
+          cd "$(dirname "$GRADLEW")"
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Save APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: CallSell-Simulator-APK
+          path: extracted/**/build/outputs/apk/debug/*.apk
